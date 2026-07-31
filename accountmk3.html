@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<title>記帳本</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+  background: #f5f5f7; color: #1a1a2e; min-height: 100vh; padding-bottom: 80px;
+}
+.container { max-width: 480px; margin: 0 auto; padding: 16px; }
+header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px; background: #fff; border-bottom: 1px solid #e5e5e5;
+  position: sticky; top: 0; z-index: 100;
+}
+header h1 { font-size: 20px; font-weight: 700; }
+.header-btns { display: flex; gap: 8px; }
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e5e5e5;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px;
+}
+
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 16px 0; }
+.summary-card { background: #fff; border-radius: 14px; padding: 14px 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }
+.summary-card .label { font-size: 11px; color: #999; margin-bottom: 6px; }
+.summary-card .value { font-size: 18px; font-weight: 700; }
+.summary-card.income .value { color: #27ae60; }
+.summary-card.expense .value { color: #e74c3c; }
+.summary-card.balance .value { color: #4a90d9; }
+
+.card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 16px; }
+.card h3 { font-size: 15px; margin-bottom: 12px; color: #666; }
+
+.form-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.form-row input, .form-row select, .form-row textarea {
+  flex: 1; min-width: 80px; padding: 10px 12px; border: 1px solid #e5e5e5;
+  border-radius: 10px; background: #f5f5f7; color: #1a1a2e; font-size: 15px; font-family: inherit;
+}
+.btn {
+  padding: 10px 18px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: #4a90d9; color: #fff; }
+.btn-danger { background: #e74c3c; color: #fff; }
+.btn-secondary { background: #e5e5e5; color: #1a1a2e; }
+.btn-outline { background: transparent; border: 1px solid #e5e5e5; color: #666; }
+.type-toggle { display: flex; border-radius: 10px; overflow: hidden; border: 1px solid #e5e5e5; }
+.type-toggle button { flex: 1; padding: 10px; border: none; background: #f5f5f7; color: #666; font-size: 14px; font-weight: 600; cursor: pointer; }
+.type-toggle button.active { background: #4a90d9; color: #fff; }
+.type-toggle button.income.active { background: #27ae60; }
+.type-toggle button.expense.active { background: #e74c3c; }
+
+.section-title { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; font-size: 15px; font-weight: 700; }
+
+.search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-bar input { flex: 1; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 10px; background: #fff; font-size: 14px; }
+
+.filter-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.filter-tag { padding: 5px 12px; border-radius: 20px; border: 1px solid #e5e5e5; background: #fff; color: #666; font-size: 12px; cursor: pointer; }
+.filter-tag.active { background: #4a90d9; color: #fff; border-color: #4a90d9; }
+
+.tx-list { display: flex; flex-direction: column; gap: 8px; }
+.tx-item { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative; }
+.tx-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; background: #f5f5f7; }
+.tx-info { flex: 1; min-width: 0; }
+.tx-title { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-meta { font-size: 12px; color: #999; margin-top: 2px; }
+.tx-amount { font-size: 17px; font-weight: 700; flex-shrink: 0; }
+.tx-amount.income { color: #27ae60; }
+.tx-amount.expense { color: #e74c3c; }
+.tx-img-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; border: 1px solid #e5e5e5; }
+.tx-actions { position: absolute; right: 14px; top: 50%; margin-top: -16px; display: none; }
+.tx-item:active .tx-actions { display: flex; gap: 6px; }
+
+.pie-chart { display: flex; justify-content: center; margin: 10px 0; }
+.pie-legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+.pie-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
+.pie-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+.budget-item { margin-bottom: 14px; }
+.budget-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.budget-bar-bg { height: 8px; background: #f5f5f7; border-radius: 4px; overflow: hidden; }
+.budget-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+
+.goal-item { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.goal-icon { font-size: 28px; }
+.goal-info { flex: 1; }
+.goal-name { font-size: 14px; font-weight: 600; }
+.goal-amount { font-size: 12px; color: #999; }
+.goal-bar-bg { height: 6px; background: #f5f5f7; border-radius: 3px; overflow: hidden; }
+.goal-bar-fill { height: 100%; background: #4a90d9; border-radius: 3px; transition: width 0.5s; }
+
+.account-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.account-card { background: #f5f5f7; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #e5e5e5; }
+.account-card .icon { font-size: 24px; margin-bottom: 4px; }
+.account-card .name { font-size: 12px; color: #666; }
+.account-card .bal { font-size: 15px; font-weight: 700; margin-top: 4px; }
+
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
+.modal-overlay.show { display: flex; }
+.modal-content { background: #fff; width: 100%; max-width: 480px; max-height: 85vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s; }
+.modal-overlay.show .modal-content { transform: translateY(0); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.modal-header h2 { font-size: 18px; }
+.modal-close { font-size: 24px; background: none; border: none; color: #999; cursor: pointer; }
+
+.img-upload { border: 2px dashed #e5e5e5; border-radius: 10px; padding: 16px; text-align: center; color: #999; cursor: pointer; margin-bottom: 10px; width: 100%; }
+.img-upload.has-img { border-style: solid; border-color: #4a90d9; padding: 8px; }
+.img-upload img { max-width: 100%; max-height: 150px; border-radius: 8px; }
+
+.settings-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #e5e5e5; }
+.settings-label { font-size: 15px; }
+.settings-desc { font-size: 12px; color: #999; margin-top: 2px; }
+
+.toggle { width: 50px; height: 28px; border-radius: 14px; background: #e5e5e5; position: relative; cursor: pointer; flex-shrink: 0; }
+.toggle.on { background: #4a90d9; }
+.toggle-knob { position: absolute; width: 24px; height: 24px; border-radius: 50%; background: #fff; top: 2px; left: 2px; transition: transform 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle.on .toggle-knob { transform: translateX(22px); }
+
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e5e5e5; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; color: #999; font-size: 11px; cursor: pointer; border: none; background: none; }
+.nav-item .icon { font-size: 22px; }
+.nav-item.active { color: #4a90d9; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.repeat-badge { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(74,144,217,0.15); color: #4a90d9; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: #999; }
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+.csv-area { width: 100%; min-height: 120px; padding: 12px; border: 1px solid #e5e5e5; border-radius: 10px; background: #f5f5f7; color: #1a1a2e; font-size: 12px; font-family: monospace; resize: vertical; margin-bottom: 10px; }
+
+@media (max-width: 380px) { .summary-grid { grid-template-columns: 1fr 1fr; } .account-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>記帳本</h1>
+  <div class="header-btns">
+    <button class="btn-icon" onclick="app.toggleTheme()">&#127769;</button>
+    <button class="btn-icon" onclick="app.showModal('settingsModal')">&#9881;</button>
+  </div>
+</header>
+
+<div class="container">
+
+<div id="page-home" class="page active">
+  <div class="summary-grid">
+    <div class="summary-card income"><div class="label">&#x672c;&#x6708;&#x6536;&#x5165;</div><div class="value" id="monthIncome">$0</div></div>
+    <div class="summary-card expense"><div class="label">&#x672c;&#x6708;&#x652f;&#x51fa;</div><div class="value" id="monthExpense">$0</div></div>
+    <div class="summary-card balance"><div class="label">&#x672c;&#x6708;&#x7d50;&#x9918;</div><div class="value" id="monthBalance">$0</div></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title"><span>&#127974; &#x5e33;&#x6236;&#x7d50;&#x9918;</span><button class="btn btn-outline" onclick="app.showModal('accountModal')" style="padding:4px 10px;font-size:12px;">&#x7ba1;&#x7406;</button></div>
+    <div class="account-grid" id="accountGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title"><span>&#128202; &#x9810;&#x7b97;&#x8ffd;&#x8e64;</span><button class="btn btn-outline" onclick="app.showModal('budgetModal')" style="padding:4px 10px;font-size:12px;">&#x8a2d;&#x5b9a;</button></div>
+    <div id="budgetList"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title"><span>&#127919; &#x5132;&#x84c4;&#x76ee;&#x6a19;</span><button class="btn btn-outline" onclick="app.showModal('goalModal')" style="padding:4px 10px;font-size:12px;">&#x65b0;&#x589e;</button></div>
+    <div id="goalList"></div>
+  </div>
+
+  <div class="card">
+    <h3>&#128200; &#x652f;&#x51fa;&#x985e;&#x5225;&#x5206;&#x6790;</h3>
+    <div class="pie-chart" id="pieChart"></div>
+    <div class="pie-legend" id="pieLegend"></div>
+  </div>
+
+  <div class="card">
+    <h3>&#10133; &#x5feb;&#x901f;&#x8a18;&#x5e33;</h3>
+    <div class="form-row">
+      <div class="type-toggle" style="flex:1;">
+        <button type="button" class="income active" onclick="app.setTxType('income',this)">&#x6536;&#x5165;</button>
+        <button type="button" class="expense" onclick="app.setTxType('expense',this)">&#x652f;&#x51fa;</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <input type="number" id="qaAmount" placeholder="&#x91d1;&#x984d;" min="0" step="0.01">
+      <select id="qaCategory"><option value="&#x85aa;&#x91d1;">&#x85aa;&#x91d1;</option><option value="&#x6295;&#x8cc7;">&#x6295;&#x8cc7;</option><option value="&#x734e;&#x91d1;">&#x734e;&#x91d1;</option><option value="&#x5176;&#x4ed6;&#x6536;&#x5165;">&#x5176;&#x4ed6;&#x6536;&#x5165;</option></select>
+    </div>
+    <div class="form-row">
+      <select id="qaAccount"><option value="&#x73fe;&#x91d1;">&#128181; &#x73fe;&#x91d1;</option><option value="&#x9280;&#x884c;&#x6236;&#x53e3;">&#127974; &#x9280;&#x884c;&#x6236;&#x53e3;</option><option value="&#x4fe1;&#x7528;&#x5361;">&#128179; &#x4fe1;&#x7528;&#x5361;</option></select>
+      <input type="date" id="qaDate">
+    </div>
+    <div class="form-row"><input type="text" id="qaNote" placeholder="&#x5099;&#x8a3b;&#xff08;&#x53ef;&#x9078;&#xff09;" style="flex:2;"></div>
+    <div class="form-row">
+      <div class="img-upload" id="qaImgUpload" onclick="document.getElementById('qaImgInput').click()">
+        <span>&#128247; &#x9ede;&#x64ca;&#x4e0a;&#x50b3;&#x6536;&#x64da;</span>
+      </div>
+      <input type="file" id="qaImgInput" accept="image/*" style="display:none" onchange="app.handleImgUpload(this)">
+    </div>
+    <div class="form-row" style="justify-content: space-between;">
+      <button class="btn btn-secondary" onclick="app.showModal('advancedModal')">&#9881; &#x9032;&#x968e;&#x9078;&#x9805;</button>
+      <button class="btn btn-primary" onclick="app.quickAdd()">&#128190; &#x5132;&#x5b58;</button>
+    </div>
+  </div>
+</div>
+
+<div id="page-transactions" class="page">
+  <div class="section-title">
+    <span>&#128221; &#x4ea4;&#x6613;&#x8a18;&#x9304;</span>
+    <button class="btn btn-outline" onclick="app.exportCSV()" style="padding:4px 10px;font-size:12px;">&#128228; &#x532f;&#x51fa;CSV</button>
+  </div>
+  <div class="search-bar"><input type="text" id="searchInput" placeholder="&#128269; &#x641c;&#x5c0b;..." oninput="app.renderTransactions()"></div>
+  <div class="filter-tags" id="filterTags"></div>
+  <div class="tx-list" id="txList"></div>
+</div>
+
+<div id="page-stats" class="page">
+  <div class="section-title">&#128202; &#x7d71;&#x8a08;&#x5206;&#x6790;</div>
+  <div class="card"><h3>&#x8fd1;6&#x500b;&#x6708;&#x6536;&#x652f;&#x8da8;&#x52e2;</h3><div id="trendChart" style="height:200px;"></div></div>
+  <div class="card"><h3>&#x985e;&#x5225;&#x4f54;&#x6bd4;</h3><div class="pie-chart" id="statsPieChart"></div><div class="pie-legend" id="statsPieLegend"></div></div>
+  <div class="card"><h3>&#x5e33;&#x6236;&#x5206;&#x4f48;</h3><div id="accountChart" style="height:180px;"></div></div>
+</div>
+
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="app.switchPage('home',this)"><span class="icon">&#127968;</span><span>&#x9996;&#x9801;</span></button>
+  <button class="nav-item" onclick="app.switchPage('transactions',this)"><span class="icon">&#128221;</span><span>&#x8a18;&#x9304;</span></button>
+  <button class="nav-item" onclick="app.switchPage('stats',this)"><span class="icon">&#128202;</span><span>&#x7d71;&#x8a08;</span></button>
+</nav>
+
+<div class="modal-overlay" id="advancedModal">
+  <div class="modal-content">
+    <div class="modal-header"><h2>&#9881; &#x9032;&#x968e;&#x9078;&#x9805;</h2><button class="modal-close" onclick="app.closeModal('advancedModal')">&times;</button></div>
+    <div class="form-row"><label style="font-size:14px;color:#666;width:100%;">&#127991; &#x6a19;&#x7c64;&#xff08;&#x7528;&#x9017;&#x865f;&#x5206;&#x9694;&#xff09;</label></div>
+    <div class="form-row"><input type="text" id="qaTags" placeholder="&#x4f8b;&#x5982; &#x5de5;&#x4f5c; &#x901a;&#x52e4; &#x5fc5;&#x8981;" style="flex:1;"></div>
+    <div class="form-row"><label style="font-size:14px;color:#666;width:100%;">&#128260; &#x5b9a;&#x671f;&#x91cd;&#x8907;</label></div>
+    <div class="form-row">
+      <select id="qaRepeat" style="flex:1;"><option value="">&#x4e0d;&#x91cd;&#x8907;</option><option value="daily">&#x6bcf;&#x65e5;</option><option value="weekly">&#x6bcf;&#x9031;</option><option value="monthly">&#x6bcf;&#x6708;</option><option value="yearly">&#x6bcf;&#x5e74;</option></select>
+    </div>
+    <div class="form-row"><label style="font-size:14px;color:#666;width:100%;">&#128221; &#x8a73;&#x7d30;&#x5099;&#x8a3b;</label></div>
+    <div class="form-row"><textarea id="qaDetail" placeholder="&#x8a73;&#x7d30;&#x8aaa;&#x660e;..." style="flex:1;height:80px;"></textarea></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-content">
+    <div class="modal-header"><h2>&#9881; &#x8a2d;&#x5b9a;</h2><button class="modal-close" onclick="app.closeModal('settingsModal')">&times;</button></div>
+    <div style="margin-bottom:20px;"><h3 style="font-size:14px;color:#999;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">&#x5916;&#x89c0;</h3>
+      <div class="settings-item"><div><div class="settings-label">&#127769; &#x6df1;&#x8272;&#x6a21;&#x5f0f;</div></div><div class="toggle" id="darkToggle" onclick="app.toggleTheme()"><div class="toggle-knob"></div></div></div>
+    </div>
+    <div style="margin-bottom:20px;"><h3 style="font-size:14px;color:#999;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">&#x8cc7;&#x6599;</h3>
+      <div class="settings-item" onclick="app.showModal('csvModal')" style="cursor:pointer;"><div><div class="settings-label">&#128228; &#x532f;&#x51fa; CSV</div><div class="settings-desc">&#x5099;&#x4efd;&#x6240;&#x6709;&#x4ea4;&#x6613;&#x8a18;&#x9304;</div></div><span style="color:#999;">&#8250;</span></div>
+      <div class="settings-item" onclick="app.showModal('importModal')" style="cursor:pointer;"><div><div class="settings-label">&#128229; &#x532f;&#x5165; CSV</div><div class="settings-desc">&#x5f9e;&#x5099;&#x4efd;&#x9084;&#x539f;&#x8cc7;&#x6599;</div></div><span style="color:#999;">&#8250;</span></div>
+      <div class="settings-item" onclick="if(confirm('\u78ba\u5b9a\u8981\u6e05\u9664\u6240\u6709\u8cc7\u6599\uff1f')){app.clearAllData();}" style="cursor:pointer;"><div><div class="settings-label" style="color:#e74c3c;">&#128465; &#x6e05;&#x9664;&#x6240;&#x6709;&#x8cc7;&#x6599;</div><div class="settings-desc">&#x522a;&#x9664;&#x6240;&#x6709;&#x8a18;&#x9304;&#x8207;&#x8a2d;&#x5b9a;</div></div><span style="color:#e74c3c;">&#8250;</span></div>
+    </div>
+    <div><h3 style="font-size:14px;color:#999;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">&#x95dc;&#x65bc;</h3>
+      <div class="settings-item"><div><div class="settings-label">&#128241; &#x7248;&#x672c;</div><div class="settings-desc">v1.0 - &#x96e2;&#x7dda;&#x8a18;&#x5e33;&#x672c;</div></div></div>
+      <div class="settings-item"><div><div class="settings-label">&#128161; &#x8cc7;&#x6599;&#x5132;&#x5b58;</div><div class="settings-desc">&#x6240;&#x6709;&#x8cc7;&#x6599;&#x5132;&#x5b58;&#x5728;&#x624b;&#x6a5f;&#x672c;&#x5730;</div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="csvModal">
+  <div class="modal-content">
+    <div class="modal-header"><h2>&#128228; &#x532f;&#x51fa; CSV</h2><button class="modal-close" onclick="app.closeModal('csvModal')">&times;</button></div>
+    <p style="font-size:13px;color:#666;margin-bottom:10px;">&#x8907;&#x88fd;&#x4ee5;&#x4e0b;&#x5167;&#x5bb9;</p>
+    <textarea class="csv-area" id="csvOutput" readonly></textarea>
+    <button class="btn btn-primary" onclick="app.copyCSV()">&#128203; &#x8907;&#x88fd;</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="importModal">
+  <div class="modal-content">
+    <div class="modal-header"><h2>&#128229; &#x532f;&#x5165; CSV</h2><button class="modal-close" onclick="app.closeModal('importModal')">&times;</button></div>
+    <p style="font-size:13px;color:#666;margin-bottom:10px;">&#x8cbc;&#x4e0a; CSV &#x5167;&#x5bb9;</p>
+    <textarea class="csv-area" id="csvInput" placeholder="2026-07-31,expense,&#x98f2;&#x98df;,50,&#x73fe;&#x91d1;,&#x5348;&#x9910;"></textarea>
+    <button class="btn btn-primary" onclick="app.importCSV()">&#9989; &#x532f;&#x5165;</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="accountModal">
+  <div class="modal-content">
+    <div class="modal-header"><h2>&#127974; &#x7ba1;&#x7406;&#x5e33;&#x6236;</h2><button class="modal-close" onclick="app.closeModal('accountModal')">&times;</button></div>
+    <div id="accountManageList"></div>
+    <div class="form-row" style="margin-top:16px;"><input type="text" id="newAccountName" placeholder="&#x65b0;&#x5e33;&#x6236;&#x540d;&#x7a31;" style="flex:1;"><button class="btn btn-primary" onclick="app.addAccount()">&#10133; &#x65b0;&#x589e;</butto
